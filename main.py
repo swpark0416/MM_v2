@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -27,6 +28,11 @@ class HabitCreate(BaseModel):
     category: str
     status: str = "보유 습관"
     level: str = "중"  # 상, 중, 하
+
+
+class HabitUpdate(BaseModel):
+    level: Optional[str] = None
+    status: Optional[str] = None
 
 
 @app.get("/api/habits")
@@ -62,7 +68,6 @@ def get_habits():
             st_obj = props.get("습관 상태", {}).get("select")
             st_name = st_obj["name"] if st_obj else "보유 습관"
             
-            # 수준(상/중/하) 읽기 (기본값 "중")
             level_obj = props.get("수준", {}).get("select")
             level_name = level_obj["name"] if level_obj else "중"
 
@@ -100,6 +105,23 @@ def create_habit(habit: HabitCreate):
             },
         )
         return {"status": "success", "id": response["id"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/api/habits/{page_id}")
+def update_habit(page_id: str, habit: HabitUpdate):
+    """습관의 수준(상/중/하) 또는 상태(보유 습관/만들고 싶은 습관)를 변경합니다."""
+    try:
+        props = {}
+        if habit.level:
+            props["수준"] = {"select": {"name": habit.level}}
+        if habit.status:
+            props["습관 상태"] = {"select": {"name": habit.status}}
+
+        if props:
+            notion.pages.update(page_id=page_id, properties=props)
+        return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
