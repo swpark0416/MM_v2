@@ -26,10 +26,7 @@ class HabitCreate(BaseModel):
     title: str
     category: str
     status: str = "보유 습관"
-
-
-class HabitToggle(BaseModel):
-    completed: bool
+    level: str = "중"  # 상, 중, 하
 
 
 @app.get("/api/habits")
@@ -65,8 +62,9 @@ def get_habits():
             st_obj = props.get("습관 상태", {}).get("select")
             st_name = st_obj["name"] if st_obj else "보유 습관"
             
-            # 완료 체크박스 상태 읽기 (기본값 False)
-            is_completed = props.get("완료", {}).get("checkbox", False)
+            # 수준(상/중/하) 읽기 (기본값 "중")
+            level_obj = props.get("수준", {}).get("select")
+            level_name = level_obj["name"] if level_obj else "중"
 
             if h_title and cat_name in CATEGORIES:
                 item = {
@@ -74,7 +72,7 @@ def get_habits():
                     "title": h_title,
                     "category": cat_name,
                     "status": st_name,
-                    "completed": is_completed
+                    "level": level_name
                 }
                 all_habits_flat.append(item)
 
@@ -98,25 +96,10 @@ def create_habit(habit: HabitCreate):
                 "Name": {"title": [{"text": {"content": habit.title}}]},
                 "영역": {"select": {"name": habit.category}},
                 "습관 상태": {"select": {"name": habit.status}},
-                "완료": {"checkbox": False}
+                "수준": {"select": {"name": habit.level}},
             },
         )
         return {"status": "success", "id": response["id"]}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.patch("/api/habits/{page_id}/toggle")
-def toggle_habit(page_id: str, toggle: HabitToggle):
-    """습관 블록 완료/미완료 토글"""
-    try:
-        notion.pages.update(
-            page_id=page_id,
-            properties={
-                "완료": {"checkbox": toggle.completed}
-            }
-        )
-        return {"status": "success", "completed": toggle.completed}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -129,3 +112,4 @@ def delete_habit(page_id: str):
         return {"status": "success", "message": "삭제 완료"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
