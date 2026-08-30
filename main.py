@@ -7,7 +7,6 @@ import requests
 
 app = FastAPI(title="Habit Tower Backend API")
 
-# 프론트엔드 브라우저 접근 허용 (CORS 설정)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 환경 변수 설정 (기본값 설정 가능)
 NOTION_TOKEN = os.getenv("NOTION_TOKEN", "YOUR_NOTION_TOKEN_HERE")
 DATABASE_ID = os.getenv("DATABASE_ID", "YOUR_DATABASE_ID_HERE")
 
@@ -28,6 +26,10 @@ class HabitCreate(BaseModel):
     title: str
     category: str
     status: str = "보유 습관"
+
+
+class HabitToggle(BaseModel):
+    completed: bool
 
 
 @app.get("/api/habits")
@@ -62,6 +64,9 @@ def get_habits():
             cat_name = cat_obj["name"] if cat_obj else None
             st_obj = props.get("습관 상태", {}).get("select")
             st_name = st_obj["name"] if st_obj else "보유 습관"
+            
+            # 완료 체크박스 상태 읽기 (기본값 False)
+            is_completed = props.get("완료", {}).get("checkbox", False)
 
             if h_title and cat_name in CATEGORIES:
                 item = {
@@ -69,6 +74,7 @@ def get_habits():
                     "title": h_title,
                     "category": cat_name,
                     "status": st_name,
+                    "completed": is_completed
                 }
                 all_habits_flat.append(item)
 
@@ -92,9 +98,25 @@ def create_habit(habit: HabitCreate):
                 "Name": {"title": [{"text": {"content": habit.title}}]},
                 "영역": {"select": {"name": habit.category}},
                 "습관 상태": {"select": {"name": habit.status}},
+                "완료": {"checkbox": False}
             },
         )
         return {"status": "success", "id": response["id"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/api/habits/{page_id}/toggle")
+def toggle_habit(page_id: str, toggle: HabitToggle):
+    """습관 블록 완료/미완료 토글"""
+    try:
+        notion.pages.update(
+            page_id=page_id,
+            properties={
+                "완료": {"checkbox": toggle.completed}
+            }
+        )
+        return {"status": "success", "completed": toggle.completed}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -107,4 +129,3 @@ def delete_habit(page_id: str):
         return {"status": "success", "message": "삭제 완료"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
