@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miracle Morning Tower</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: #f7fafc; 
+            color: #2d3748; 
+            padding: 16px;
+            max-width: 600px; 
+            margin: 0 auto; 
+            overflow-x: hidden; 
+        }
+
+        /* 상단 네비게이션 */
+        .top-nav { display: flex; justify-content: space-around; gap: 6px; margin-bottom: 16px; background-color: #edf2f7; padding: 5px; border-radius: 12px; }
+        .top-nav-item { flex: 1; padding: 8px 4px; font-size: 0.78rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: #718096; cursor: pointer; transition: all 0.2s ease; text-align: center; touch-action: manipulation; }
+        .top-nav-item.active { background-color: #3182ce; color: #ffffff; box-shadow: 0 2px 6px rgba(49, 130, 206, 0.3); }
+
+        /* 슬라이드 컨테이너 */
+        .slider-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .slide-page { width: 33.333%; padding: 4px; flex-shrink: 0; }
+
+        /* Silence 카드 */
+        .silence-card { background: linear-gradient(135deg, #ebf8ff 0%, #e9d8fd 100%); border-radius: 16px; padding: 32px 20px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 480px; }
+        .silence-title { font-size: 1.4rem; font-weight: 700; color: #4a5568; margin-bottom: 8px; }
+        .silence-subtitle { font-size: 0.85rem; color: #718096; margin-bottom: 28px; }
+
+        .breathe-circle { width: 140px; height: 140px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); border: 2px solid #b3d8ff; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin-bottom: 30px; box-shadow: 0 0 20px rgba(147, 197, 253, 0.4); animation: breathe 8s infinite ease-in-out; }
+        @keyframes breathe { 0%, 100% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 30px rgba(168, 85, 247, 0.4); } }
+
+        /* Affirmation 카드 */
+        .affirmation-card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; min-height: 480px; display: flex; flex-direction: column; }
+        .mission-textarea { width: 100%; flex: 1; min-height: 280px; margin-top: 12px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; color: #2d3748; resize: none; outline: none; background-color: #f8fafc; font-family: inherit; }
+        .mission-textarea:focus { border-color: #3182ce; background-color: #ffffff; }
+        .mission-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+        .save-toast { font-size: 0.75rem; color: #38a169; font-weight: 600; }
+
+        /* 습관 탑 스타일 */
+        h1 { text-align: center; font-size: 1.3rem; margin-bottom: 14px; font-weight: 700; color: #2d3748; }
+        .card { background: #ffffff; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 0.8rem; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        input, select, button { padding: 8px 10px; font-size: 0.8rem; border: 1px solid #dde2e5; border-radius: 6px; outline: none; }
+        button { background-color: #3182ce; color: white; border: none; font-weight: 600; cursor: pointer; touch-action: manipulation; }
+
+        .tower-grid { display: flex; gap: 6px; width: 100%; justify-content: space-between; align-items: stretch; }
+        .category-wrapper { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .tower-col { flex: 1; display: flex; flex-direction: column; border-radius: 10px; padding: 8px 4px; min-height: 350px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .col-study { background-color: #fff5f5; border: 1px solid #fed7d7; }
+        .col-hobby { background-color: #fffaf0; border: 1px solid #feebc8; }
+        .col-body  { background-color: #ebf8ff; border: 1px solid #bee3f8; }
+        .col-mind  { background-color: #faf5ff; border: 1px solid #e9d8fd; }
+
+        .tower-header { text-align: center; font-size: 0.72rem; font-weight: 700; padding-bottom: 6px; border-bottom: 2px solid rgba(0,0,0,0.05); }
+        .tower-blocks { display: flex; flex-direction: column-reverse; width: 100%; align-items: center; margin-top: auto; gap: 4px; }
+
+        /* 블록 높이 고정 및 줄바꿈 처리 */
+        .habit-block { 
+            width: 94%; 
+            height: 42px; /* 블록 전체 높이 일괄 통일 */
+            border-radius: 6px; 
+            padding: 4px; 
+            text-align: center; 
+            word-break: break-all; 
+            background: #ffffff; 
+            font-weight: 600;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 2px;
+            cursor: pointer; 
+            user-select: none; 
+            transition: transform 0.05s ease;
+            touch-action: manipulation;
+        }
+        .habit-block:active { transform: scale(0.95); }
+
+        .habit-title-text {
+            line-height: 1.15;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* 최대 2줄 제한 */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .block-study { color: #e53e3e; border: 1px solid #feb2b2; }
+        .block-hobby { color: #dd6b20; border: 1px solid #fbd38d; }
+        .block-body  { color: #3182ce; border: 1px solid #90cdf4; }
+        .block-mind  { color: #805ad5; border: 1px solid #d6bcfa; }
+
+        .battery-gauge { display: flex; gap: 2px; align-items: center; justify-content: center; }
+        .gauge-bar { width: 7px; height: 3.5px; border-radius: 1px; background-color: #e2e8f0; border: 0.5px solid #cbd5e0; }
+        .gauge-bar.filled { background-color: currentColor; border-color: transparent; opacity: 0.85; }
+
+        .waiting-zone { height: 150px; flex-shrink: 0; background-color: #f8f9fa; border: 1.5px dashed #cbd5e0; border-radius: 8px; padding: 6px 2px; text-align: center; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        .waiting-title { font-size: 0.58rem; color: #718096; font-weight: 700; margin-bottom: 4px; flex-shrink: 0; }
+        
+        .waiting-chip { 
+            background-color: #ffffff; 
+            border-radius: 4px; 
+            padding: 4px; 
+            margin: 2px auto; 
+            width: 90%; 
+            min-height: 32px;
+            color: #4a5568; 
+            border: 1px solid #e2e8f0; 
+            text-align: center; 
+            cursor: pointer; 
+            user-select: none; 
+            touch-action: manipulation; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            word-break: break-all;
+        }
+        .waiting-chip:active { transform: scale(0.95); }
+
+        /* 모달 스타일 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-card { background: #ffffff; width: 85%; max-width: 320px; border-radius: 14px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+        .modal-btn-group { display: flex; gap: 6px; margin-bottom: 12px; }
+        .modal-btn { flex: 1; padding: 8px 0; font-size: 0.78rem; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const API_BASE_URL = "https://mm-back.onrender.com";
+        const CATEGORIES = ["공부", "취미", "외면", "내면"];
+        const CAT_ICONS = { "공부": "📚", "취미": "🎨", "외면": "💪", "내면": "🧘" };
+        const CAT_CLASSES = { "공부": "study", "취미": "hobby", "외면": "body", "내면": "mind" };
+        const LEVEL_ORDER = { "하": 1, "중": 2, "상": 3 };
+
+        const DEFAULT_MISSION = `[나의 개인 사명서 - 성공하는 사람들의 7가지 습관]
+
+1. 나는 어떤 사람이 되고 싶은가? (성품과 인격)
+- 
+
+2. 나는 무엇을 하고 싶은가? (업적과 기여)
+- 
+
+3. 내가 삶에서 지키고자 하는 핵심 원칙은 무엇인가?
+- `;
+
+        // 텍스트 길이에 따라 자동으로 적절한 font-size 반환
+        function getDynamicFontSize(text) {
+            if (!text) return '0.65rem';
+            const len = text.length;
+            if (len > 12) return '0.48rem';
+            if (len > 8)  return '0.55rem';
+            return '0.65rem';
+        }
+
+        function LevelGauge({ level }) {
+            const filledCount = level === "상" ? 3 : level === "중" ? 2 : 1;
+            return (
+                <div className="battery-gauge">
+                    {[1, 2, 3].map(num => (
+                        <div key={num} className={`gauge-bar ${num <= filledCount ? 'filled' : ''}`} />
+                    ))}
+                </div>
+            );
+        }
+
+        function HabitBlockItem({ item, cls, onDemoteToWish, onLongPress }) {
+            const timerRef = React.useRef(null);
+            const isLongPressRef = React.useRef(false);
+
+            const handlePointerDown = () => {
+                isLongPressRef.current = false;
+                timerRef.current = setTimeout(() => {
+                    isLongPressRef.current = true;
+                    if (window.navigator && window.navigator.vibrate) {
+                        window.navigator.vibrate(30);
+                    }
+                    onLongPress(item);
+                }, 300);
+            };
+
+            const handlePointerUp = () => {
+                if (timerRef.current) clearTimeout(timerRef.current);
+            };
+
+            const handleClick = (e) => {
+                e.stopPropagation();
+                if (isLongPressRef.current) {
+                    isLongPressRef.current = false;
+                    return;
+                }
+                onDemoteToWish(item);
+            };
+
+            return (
+                <div 
+                    className={`habit-block block-${cls}`}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUp}
+                    onPointerLeave={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    onClick={handleClick}
+                >
+                    <span 
+                        className="habit-title-text" 
+                        style={{ fontSize: getDynamicFontSize(item.title) }}
+                    >
+                        {item.title}
+                    </span>
+                    <LevelGauge level={item.level} />
+                </div>
+            );
+        }
+
+        function App() {
+            const [currentPage, setCurrentPage] = React.useState(0);
+            const [mission, setMission] = React.useState(() => {
+                return localStorage.getItem("my_mission_statement") || DEFAULT_MISSION;
+            });
+            const [saveMsg, setSaveMsg] = React.useState("");
+
+            const [habitsData, setHabitsData] = React.useState({ owned: {}, wish: {}, all: [] });
+            const [editModalItem, setEditModalItem] = React.useState(null); 
+
+            const [title, setTitle] = React.useState("");
+            const [category, setCategory] = React.useState("공부");
+            const [status, setStatus] = React.useState("보유 습관");
+            const [level, setLevel] = React.useState("중");
+
+            const loadHabits = async () => {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/habits`);
+                    const data = await res.json();
+                    setHabitsData(data);
+                } catch (err) {
+                    console.error("데이터 로드 실패:", err);
+                }
+            };
+
+            React.useEffect(() => {
+                loadHabits();
+                const interval = setInterval(loadHabits, 30000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const handleDemoteToWish = async (item) => {
+                setHabitsData(prev => {
+                    const categoryOwned = (prev.owned[item.category] || []).filter(h => h.id !== item.id);
+                    const updatedItem = { ...item, status: "만들고 싶은 습관" };
+                    const categoryWish = [...(prev.wish[item.category] || []), updatedItem];
+                    return {
+                        ...prev,
+                        owned: { ...prev.owned, [item.category]: categoryOwned },
+                        wish: { ...prev.wish, [item.category]: categoryWish }
+                    };
+                });
+
+                try {
+                    await fetch(`${API_BASE_URL}/api/habits/${item.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ status: "만들고 싶은 습관" })
+                    });
+                } catch (err) {
+                    console.error("대기 이동 실패:", err);
+                    loadHabits();
+                }
+            };
+
+            const handlePromoteToOwned = async (item) => {
+                setHabitsData(prev => {
+                    const categoryWish = (prev.wish[item.category] || []).filter(h => h.id !== item.id);
+                    const updatedItem = { ...item, status: "보유 습관" };
+                    const categoryOwned = [...(prev.owned[item.category] || []), updatedItem];
+                    return {
+                        ...prev,
+                        owned: { ...prev.owned, [item.category]: categoryOwned },
+                        wish: { ...prev.wish, [item.category]: categoryWish }
+                    };
+                });
+
+                try {
+                    await fetch(`${API_BASE_URL}/api/habits/${item.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ status: "보유 습관" })
+                    });
+                } catch (err) {
+                    console.error("습관 승격 실패:", err);
+                    loadHabits();
+                }
+            };
+
+            const handleChangeLevel = async (item, newLevel) => {
+                setHabitsData(prev => {
+                    const categoryOwned = (prev.owned[item.category] || []).map(h => 
+                        h.id === item.id ? { ...h, level: newLevel } : h
+                    );
+                    return {
+                        ...prev,
+                        owned: { ...prev.owned, [item.category]: categoryOwned }
+                    };
+                });
+                setEditModalItem(null);
+
+                try {
+                    await fetch(`${API_BASE_URL}/api/habits/${item.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ level: newLevel })
+                    });
+                } catch (err) {
+                    console.error("수준 변경 실패:", err);
+                    loadHabits();
+                }
+            };
+
+            const handleDeleteFromModal = async (id) => {
+                setEditModalItem(null);
+                try {
+                    await fetch(`${API_BASE_URL}/api/habits/${id}`, { method: "DELETE" });
+                    loadHabits();
+                } catch (err) {
+                    console.error("삭제 실패:", err);
+                }
+            };
+
+            const handleSaveMission = () => {
+                localStorage.setItem("my_mission_statement", mission);
+                setSaveMsg("✓ 저장되었습니다.");
+                setTimeout(() => setSaveMsg(""), 2000);
+            };
+
+            const handleAddHabit = async (e) => {
+                e.preventDefault();
+                if (!title.trim()) return;
+
+                await fetch(`${API_BASE_URL}/api/habits`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ title, category, status, level })
+                });
+
+                setTitle("");
+                loadHabits();
+            };
+
+            return (
+                <div>
+                    <div className="top-nav">
+                        <button className={`top-nav-item ${currentPage === 0 ? 'active' : ''}`} onClick={() => setCurrentPage(0)}>🧘 Silence</button>
+                        <button className={`top-nav-item ${currentPage === 1 ? 'active' : ''}`} onClick={() => setCurrentPage(1)}>📜 사명서</button>
+                        <button className={`top-nav-item ${currentPage === 2 ? 'active' : ''}`} onClick={() => setCurrentPage(2)}>🏛️ 습관 탑</button>
+                    </div>
+
+                    <div className="slider-container" style={{ transform: `translateX(-${currentPage * (100 / 3)}%)` }}>
+                        <div className="slide-page">
+                            <div className="silence-card">
+                                <div className="silence-title">🧘‍♂️ 1. Silence (침묵)</div>
+                                <div className="silence-subtitle">고요히 숨을 쉬며 마음을 정리해 보세요</div>
+                                <div className="breathe-circle">✨</div>
+                            </div>
+                        </div>
+
+                        <div className="slide-page">
+                            <div className="affirmation-card">
+                                <h1 style={{ textAlign: 'left', marginBottom: '4px' }}>📜 2. Affirmation</h1>
+                                <div style={{ fontSize: '0.75rem', color: '#718096' }}>성공하는 사람들의 7가지 습관</div>
+                                <textarea className="mission-textarea" value={mission} onChange={(e) => setMission(e.target.value)} />
+                                <div className="mission-actions">
+                                    <span className="save-toast">{saveMsg}</span>
+                                    <button onClick={handleSaveMission} style={{ padding: '8px 16px', borderRadius: '8px' }}>저장하기</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="slide-page">
+                            <h1>🏛️ 나의 습관 탑</h1>
+
+                            <details className="card">
+                                <summary>➕ 습관 블록 추가</summary>
+                                <form onSubmit={handleAddHabit} className="form-group">
+                                    <input type="text" placeholder="예: 하루 30분 독서" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                                    <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                                        {CATEGORIES.map(cat => <option key={cat} value={cat}>{CAT_ICONS[cat]} {cat}</option>)}
+                                    </select>
+                                    <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                                        <option value="보유 습관">보유 습관</option>
+                                        <option value="만들고 싶은 습관">만들고 싶은 습관</option>
+                                    </select>
+                                    <select value={level} onChange={(e) => setLevel(e.target.value)}>
+                                        <option value="상">수준: 상 (3칸)</option>
+                                        <option value="중">수준: 중 (2칸)</option>
+                                        <option value="하">수준: 하 (1칸)</option>
+                                    </select>
+                                    <button type="submit">저장하기</button>
+                                </form>
+                            </details>
+
+                            <div className="tower-grid">
+                                {CATEGORIES.map(cat => {
+                                    const cls = CAT_CLASSES[cat];
+                                    const owned = (habitsData.owned && habitsData.owned[cat]) || [];
+                                    const wish = (habitsData.wish && habitsData.wish[cat]) || [];
+
+                                    const sortedOwned = [...owned].sort((a, b) => 
+                                        (LEVEL_ORDER[a.level] || 2) - (LEVEL_ORDER[b.level] || 2)
+                                    );
+
+                                    return (
+                                        <div key={cat} className="category-wrapper">
+                                            <div className={`tower-col col-${cls}`}>
+                                                <div className="tower-header">
+                                                    {CAT_ICONS[cat]} {cat}<br />
+                                                    <span style={{ fontWeight: 'normal', fontSize: '0.55rem', color: '#718096' }}>({owned.length}개)</span>
+                                                </div>
+                                                <div className="tower-blocks">
+                                                    {sortedOwned.map(item => (
+                                                        <HabitBlockItem
+                                                            key={item.id} item={item} cls={cls}
+                                                            onDemoteToWish={handleDemoteToWish}
+                                                            onLongPress={(targetItem) => setEditModalItem(targetItem)}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="waiting-zone">
+                                                <div className="waiting-title">⏳ 대기 중</div>
+                                                {wish.length > 0 ? (
+                                                    wish.map(w => (
+                                                        <div key={w.id} className="waiting-chip" onClick={() => handlePromoteToOwned(w)}>
+                                                            <span style={{ fontSize: getDynamicFontSize(w.title) }}>{w.title}</span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div style={{ fontSize: '0.55rem', color: '#a0aec0', margin: 'auto 0' }}>대기 없음</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {editModalItem && (
+                        <div className="modal-overlay" onClick={() => setEditModalItem(null)}>
+                            <div className="modal-card" onClick={e => e.stopPropagation()}>
+                                <div className="modal-title">⚙️ {editModalItem.title}</div>
+                                
+                                <p style={{ fontSize: '0.75rem', color: '#718096', marginBottom: '8px' }}>수준 변경</p>
+                                <div className="modal-btn-group">
+                                    <button className="modal-btn" style={{ backgroundColor: editModalItem.level === '상' ? '#3182ce' : '#e2e8f0', color: editModalItem.level === '상' ? '#fff' : '#4a5568' }} onClick={() => handleChangeLevel(editModalItem, '상')}>상 (3칸)</button>
+                                    <button className="modal-btn" style={{ backgroundColor: editModalItem.level === '중' ? '#3182ce' : '#e2e8f0', color: editModalItem.level === '중' ? '#fff' : '#4a5568' }} onClick={() => handleChangeLevel(editModalItem, '중')}>중 (2칸)</button>
+                                    <button className="modal-btn" style={{ backgroundColor: editModalItem.level === '하' ? '#3182ce' : '#e2e8f0', color: editModalItem.level === '하' ? '#fff' : '#4a5568' }} onClick={() => handleChangeLevel(editModalItem, '하')}>하 (1칸)</button>
+                                </div>
+
+                                <button style={{ backgroundColor: '#e53e3e', color: 'white', width: '100%', padding: '9px', borderRadius: '8px', marginBottom: '8px', border: 'none' }} onClick={() => handleDeleteFromModal(editModalItem.id)}>
+                                    🗑️ 습관 삭제하기
+                                </button>
+                                
+                                <button style={{ backgroundColor: '#cbd5e0', color: '#4a5568', width: '100%', padding: '8px', borderRadius: '8px', border: 'none' }} onClick={() => setEditModalItem(null)}>
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+</body>
+</html>
+
