@@ -186,9 +186,7 @@
 
         function App() {
             const [currentPage, setCurrentPage] = React.useState(0);
-            const [mission, setMission] = React.useState(() => {
-                return localStorage.getItem("my_mission_statement") || DEFAULT_MISSION;
-            });
+            const [mission, setMission] = React.useState(DEFAULT_MISSION);
             const [saveMsg, setSaveMsg] = React.useState("");
 
             const [habitsData, setHabitsData] = React.useState({ owned: {}, wish: {}, all: [] });
@@ -199,18 +197,33 @@
             const [status, setStatus] = React.useState("보유 습관");
             const [level, setLevel] = React.useState("중");
 
+            // 습관 목록 불러오기
             const loadHabits = async () => {
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/habits`);
                     const data = await res.json();
                     setHabitsData(data);
                 } catch (err) {
-                    console.error("데이터 로드 실패:", err);
+                    console.error("습관 데이터 로드 실패:", err);
+                }
+            };
+
+            // 노션 DB에서 사명서 불러오기
+            const loadMission = async () => {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/mission`);
+                    const data = await res.json();
+                    if (data.mission) {
+                        setMission(data.mission);
+                    }
+                } catch (err) {
+                    console.error("사명서 로드 실패:", err);
                 }
             };
 
             React.useEffect(() => {
                 loadHabits();
+                loadMission();
                 const interval = setInterval(loadHabits, 30000);
                 return () => clearInterval(interval);
             }, []);
@@ -297,10 +310,25 @@
                 }
             };
 
-            const handleSaveMission = () => {
-                localStorage.setItem("my_mission_statement", mission);
-                setSaveMsg("✓ 저장되었습니다.");
-                setTimeout(() => setSaveMsg(""), 2000);
+            // 백엔드 API를 통해 사명서를 노션 DB에 저장
+            const handleSaveMission = async () => {
+                setSaveMsg("저장 중...");
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/mission`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ content: mission })
+                    });
+                    if (res.ok) {
+                        setSaveMsg("✓ 노션 DB에 저장되었습니다.");
+                    } else {
+                        setSaveMsg("❌ 저장 실패");
+                    }
+                } catch (err) {
+                    console.error("사명서 저장 에러:", err);
+                    setSaveMsg("❌ 저장 에러");
+                }
+                setTimeout(() => setSaveMsg(""), 2500);
             };
 
             const handleAddHabit = async (e) => {

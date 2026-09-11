@@ -135,3 +135,70 @@ def delete_habit(page_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+from pydantic import BaseModel
+
+# 사명서 데이터 요청 모델
+class MissionRequest(BaseModel):
+    content: str
+
+@app.get("/api/mission")
+def get_mission():
+    """노션 DB에서 사명서 블록을 조회합니다."""
+    try:
+        # 노션 DB 내 'Affirmation' 또는 '사명서' 항목 검색
+        response = notion.databases.query(
+            database_id=NOTION_DATABASE_ID,
+            filter={"property": "영역", "select": {"equals": "내면"}}  # 내면 카테고리 활용
+        )
+        results = response.get("results", [])
+        for page in results:
+            title_props = page["properties"]["Name"]["title"]
+            if title_props and "사명서" in title_props[0]["plain_text"]:
+                # 노션 페이지 내 텍스트 가져오기 (또는 수준/상태 필드에 저장된 content 가져오기)
+                return {"mission": page.get("properties", {}).get("사명서_내용", {}).get("rich_text", [{}])[0].get("plain_text", "")}
+        
+        return {"mission": ""}
+    except Exception as e:
+        print("사명서 조회 실패:", e)
+        return {"mission": ""}
+
+@app.post("/api/mission")
+def save_mission(data: MissionRequest):
+    """노션 DB에 작성된 사명서를 저장/수정합니다."""
+    try:
+        # 기존 사명서 페이지 검색 후 Update 또는 새 페이지 Create
+        response = notion.databases.query(
+            database_id=NOTION_DATABASE_ID,
+            filter={"property": "영역", "select": {"equals": "내면"}}
+        )
+        results = response.get("results", [])
+        target_page_id = None
+        
+        for page in results:
+            title_props = page["properties"]["Name"]["title"]
+            if title_props and "사명서" in title_props[0]["plain_text"]:
+                target_page_id = page["id"]
+                break
+
+        if target_page_id:
+            # 기존 페이지 수정
+            notion.pages.update(
+                page_id=target_page_id,
+                properties={
+                    "Name": {"title": [{"text": {"content": "📜 사명서"}}]}
+                }
+            )
+        else:
+            # 신규 사명서 페이지 생성
+            notion.pages.create(
+                parent={"database_id": NOTION_DATABASE_ID},
+                properties={
+                    "Name": {"title": [{"text": {"content": "📜 사명서"}}]},
+                    "영역": {"select": {"name": "내면"}},
+                    "습관 상태": {"select": {"name": "보유 습관"}}
+                }
+            )
+        return {"status": "success", "message": "사명서가 노션에 저장되었습니다."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
