@@ -19,26 +19,34 @@
             overflow-x: hidden; 
         }
 
-        /* 상단 네비게이션 */
-        .top-nav { display: flex; justify-content: space-around; gap: 6px; margin-bottom: 16px; background-color: #edf2f7; padding: 5px; border-radius: 12px; }
-        .top-nav-item { flex: 1; padding: 8px 4px; font-size: 0.78rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: #718096; cursor: pointer; transition: all 0.2s ease; text-align: center; touch-action: manipulation; }
+        /* 상단 네비게이션 (2개 탭) */
+        .top-nav { display: flex; justify-content: space-around; gap: 8px; margin-bottom: 16px; background-color: #edf2f7; padding: 5px; border-radius: 12px; }
+        .top-nav-item { flex: 1; padding: 10px 4px; font-size: 0.85rem; font-weight: 700; border: none; border-radius: 8px; background: transparent; color: #718096; cursor: pointer; transition: all 0.2s ease; text-align: center; touch-action: manipulation; }
         .top-nav-item.active { background-color: #3182ce; color: #ffffff; box-shadow: 0 2px 6px rgba(49, 130, 206, 0.3); }
 
-        /* 슬라이드 컨테이너 */
-        .slider-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
-        .slide-page { width: 33.333%; padding: 4px; flex-shrink: 0; }
+        /* 슬라이드 컨테이너 (2개 슬라이드) */
+        .slider-container { display: flex; width: 200%; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .slide-page { width: 50%; padding: 4px; flex-shrink: 0; }
 
-        /* Silence 카드 */
-        .silence-card { background: linear-gradient(135deg, #ebf8ff 0%, #e9d8fd 100%); border-radius: 16px; padding: 32px 20px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 480px; }
+        /* Miracle Morning 세로 스크롤 컨테이너 */
+        .miracle-morning-container { display: flex; flex-direction: column; gap: 16px; }
+
+        /* SAVERS 일반 카드 공통 스타일 */
+        .savers-card { background: #ffffff; border-radius: 16px; padding: 24px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .savers-title { font-size: 1.2rem; font-weight: 700; color: #2d3748; margin-bottom: 6px; }
+        .savers-subtitle { font-size: 0.82rem; color: #718096; margin-bottom: 16px; word-break: keep-all; line-height: 1.4; }
+        .savers-icon { font-size: 2.5rem; margin: 12px 0; }
+
+        /* Silence 전용 카드 */
+        .silence-card { background: linear-gradient(135deg, #ebf8ff 0%, #e9d8fd 100%); border-radius: 16px; padding: 32px 20px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 380px; }
         .silence-title { font-size: 1.4rem; font-weight: 700; color: #4a5568; margin-bottom: 8px; }
-        .silence-subtitle { font-size: 0.85rem; color: #718096; margin-bottom: 28px; }
-
-        .breathe-circle { width: 140px; height: 140px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); border: 2px solid #b3d8ff; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin-bottom: 30px; box-shadow: 0 0 20px rgba(147, 197, 253, 0.4); animation: breathe 8s infinite ease-in-out; }
+        .silence-subtitle { font-size: 0.85rem; color: #718096; margin-bottom: 24px; }
+        .breathe-circle { width: 130px; height: 130px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); border: 2px solid #b3d8ff; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin-bottom: 20px; box-shadow: 0 0 20px rgba(147, 197, 253, 0.4); animation: breathe 8s infinite ease-in-out; }
         @keyframes breathe { 0%, 100% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 30px rgba(168, 85, 247, 0.4); } }
 
-        /* Affirmation 카드 */
-        .affirmation-card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; min-height: 480px; display: flex; flex-direction: column; }
-        .mission-textarea { width: 100%; flex: 1; min-height: 280px; margin-top: 12px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; color: #2d3748; resize: none; outline: none; background-color: #f8fafc; font-family: inherit; }
+        /* Affirmation 전용 카드 */
+        .affirmation-card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; min-height: 420px; display: flex; flex-direction: column; }
+        .mission-textarea { width: 100%; flex: 1; min-height: 240px; margin-top: 12px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; color: #2d3748; resize: none; outline: none; background-color: #f8fafc; font-family: inherit; }
         .mission-textarea:focus { border-color: #3182ce; background-color: #ffffff; }
         .mission-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
         .save-toast { font-size: 0.75rem; color: #38a169; font-weight: 600; }
@@ -61,35 +69,10 @@
         .tower-header { text-align: center; font-size: 0.72rem; font-weight: 700; padding-bottom: 6px; border-bottom: 2px solid rgba(0,0,0,0.05); }
         .tower-blocks { display: flex; flex-direction: column-reverse; width: 100%; align-items: center; margin-top: auto; gap: 4px; }
 
-        /* 블록 높이 고정 및 줄바꿈 처리 */
-        .habit-block { 
-            width: 94%; 
-            height: 42px; /* 블록 전체 높이 일괄 통일 */
-            border-radius: 6px; 
-            padding: 4px; 
-            text-align: center; 
-            word-break: break-all; 
-            background: #ffffff; 
-            font-weight: 600;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 2px;
-            cursor: pointer; 
-            user-select: none; 
-            transition: transform 0.05s ease;
-            touch-action: manipulation;
-        }
+        .habit-block { width: 94%; height: 42px; border-radius: 6px; padding: 4px; text-align: center; word-break: break-all; background: #ffffff; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; user-select: none; transition: transform 0.05s ease; touch-action: manipulation; }
         .habit-block:active { transform: scale(0.95); }
 
-        .habit-title-text {
-            line-height: 1.15;
-            display: -webkit-box;
-            -webkit-line-clamp: 2; /* 최대 2줄 제한 */
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+        .habit-title-text { line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         .block-study { color: #e53e3e; border: 1px solid #feb2b2; }
         .block-hobby { color: #dd6b20; border: 1px solid #fbd38d; }
@@ -103,27 +86,9 @@
         .waiting-zone { height: 150px; flex-shrink: 0; background-color: #f8f9fa; border: 1.5px dashed #cbd5e0; border-radius: 8px; padding: 6px 2px; text-align: center; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
         .waiting-title { font-size: 0.58rem; color: #718096; font-weight: 700; margin-bottom: 4px; flex-shrink: 0; }
         
-        .waiting-chip { 
-            background-color: #ffffff; 
-            border-radius: 4px; 
-            padding: 4px; 
-            margin: 2px auto; 
-            width: 90%; 
-            min-height: 32px;
-            color: #4a5568; 
-            border: 1px solid #e2e8f0; 
-            text-align: center; 
-            cursor: pointer; 
-            user-select: none; 
-            touch-action: manipulation; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            word-break: break-all;
-        }
+        .waiting-chip { background-color: #ffffff; border-radius: 4px; padding: 4px; margin: 2px auto; width: 90%; min-height: 32px; color: #4a5568; border: 1px solid #e2e8f0; text-align: center; cursor: pointer; user-select: none; touch-action: manipulation; display: flex; align-items: center; justify-content: center; word-break: break-all; }
         .waiting-chip:active { transform: scale(0.95); }
 
-        /* 모달 스타일 */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .modal-card { background: #ffffff; width: 85%; max-width: 320px; border-radius: 14px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
         .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
@@ -152,7 +117,6 @@
 3. 내가 삶에서 지키고자 하는 핵심 원칙은 무엇인가?
 - `;
 
-        // 텍스트 길이에 따라 자동으로 적절한 font-size 반환
         function getDynamicFontSize(text) {
             if (!text) return '0.65rem';
             const len = text.length;
@@ -355,33 +319,73 @@
 
             return (
                 <div>
+                    {/* 상단 2개 탭 네비게이션 */}
                     <div className="top-nav">
-                        <button className={`top-nav-item ${currentPage === 0 ? 'active' : ''}`} onClick={() => setCurrentPage(0)}>🧘 Silence</button>
-                        <button className={`top-nav-item ${currentPage === 1 ? 'active' : ''}`} onClick={() => setCurrentPage(1)}>📜 사명서</button>
-                        <button className={`top-nav-item ${currentPage === 2 ? 'active' : ''}`} onClick={() => setCurrentPage(2)}>🏛️ 습관 탑</button>
+                        <button className={`top-nav-item ${currentPage === 0 ? 'active' : ''}`} onClick={() => setCurrentPage(0)}>
+                            🌅 Miracle Morning
+                        </button>
+                        <button className={`top-nav-item ${currentPage === 1 ? 'active' : ''}`} onClick={() => setCurrentPage(1)}>
+                            🏛️ 습관 탑
+                        </button>
                     </div>
 
-                    <div className="slider-container" style={{ transform: `translateX(-${currentPage * (100 / 3)}%)` }}>
+                    {/* 슬라이드 컨테이너 */}
+                    <div className="slider-container" style={{ transform: `translateX(-${currentPage * 50}%)` }}>
+                        
+                        {/* Slide 1: Miracle Morning (S.A.V.E.R.S 전체 세로 구성) */}
                         <div className="slide-page">
-                            <div className="silence-card">
-                                <div className="silence-title">🧘‍♂️ 1. Silence (침묵)</div>
-                                <div className="silence-subtitle">고요히 숨을 쉬며 마음을 정리해 보세요</div>
-                                <div className="breathe-circle">✨</div>
-                            </div>
-                        </div>
-
-                        <div className="slide-page">
-                            <div className="affirmation-card">
-                                <h1 style={{ textAlign: 'left', marginBottom: '4px' }}>📜 2. Affirmation</h1>
-                                <div style={{ fontSize: '0.75rem', color: '#718096' }}>성공하는 사람들의 7가지 습관</div>
-                                <textarea className="mission-textarea" value={mission} onChange={(e) => setMission(e.target.value)} />
-                                <div className="mission-actions">
-                                    <span className="save-toast">{saveMsg}</span>
-                                    <button onClick={handleSaveMission} style={{ padding: '8px 16px', borderRadius: '8px' }}>저장하기</button>
+                            <div className="miracle-morning-container">
+                                
+                                {/* 1. S - Silence */}
+                                <div className="silence-card">
+                                    <div className="silence-title">🧘‍♂️ 1. Silence (침묵)</div>
+                                    <div className="silence-subtitle">고요히 숨을 쉬며 마음을 정리해 보세요</div>
+                                    <div className="breathe-circle">✨</div>
                                 </div>
+
+                                {/* 2. A - Affirmation */}
+                                <div className="affirmation-card">
+                                    <h1 style={{ textAlign: 'left', marginBottom: '4px' }}>📜 2. Affirmation (확신의 말)</h1>
+                                    <div style={{ fontSize: '0.75rem', color: '#718096' }}>성공하는 사람들의 7가지 습관 : 나만의 사명서</div>
+                                    <textarea className="mission-textarea" value={mission} onChange={(e) => setMission(e.target.value)} />
+                                    <div className="mission-actions">
+                                        <span className="save-toast">{saveMsg}</span>
+                                        <button onClick={handleSaveMission} style={{ padding: '8px 16px', borderRadius: '8px' }}>저장하기</button>
+                                    </div>
+                                </div>
+
+                                {/* 3. V - Visualization */}
+                                <div className="savers-card">
+                                    <div className="savers-title">👁️ 3. Visualization (시각화)</div>
+                                    <div className="savers-subtitle">목표를 이룬 나의 모습을 마음속으로 생생하게 그려보세요.</div>
+                                    <div className="savers-icon">🌈</div>
+                                </div>
+
+                                {/* 4. E - Exercise */}
+                                <div className="savers-card">
+                                    <div className="savers-title">🏃‍♂️ 4. Exercise (운동)</div>
+                                    <div className="savers-subtitle">몸을 가볍게 움직여 뇌와 세포에 산소를 공급해 보세요.</div>
+                                    <div className="savers-icon">⚡</div>
+                                </div>
+
+                                {/* 5. R - Reading */}
+                                <div className="savers-card">
+                                    <div className="savers-title">📚 5. Reading (독서)</div>
+                                    <div className="savers-subtitle">지혜가 담긴 책을 읽으며 새로운 자극을 얻어보세요.</div>
+                                    <div className="savers-icon">📖</div>
+                                </div>
+
+                                {/* 6. S - Scribing */}
+                                <div className="savers-card">
+                                    <div className="savers-title">✍️ 6. Scribing (기록하기)</div>
+                                    <div className="savers-subtitle">오늘의 감사한 일, 아이디어, 생각들을 글로 적어보세요.</div>
+                                    <div className="savers-icon">📝</div>
+                                </div>
+
                             </div>
                         </div>
 
+                        {/* Slide 2: 습관 탑 */}
                         <div className="slide-page">
                             <h1>🏛️ 나의 습관 탑</h1>
 
@@ -481,4 +485,3 @@
     </script>
 </body>
 </html>
-
