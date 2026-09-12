@@ -65,12 +65,18 @@ def get_habits():
             page_id = page["id"]
             props = page["properties"]
 
+            # 습관 상태 검사
+            st_obj = props.get("습관 상태", {}).get("select")
+            st_name = st_obj["name"] if st_obj else "보유 습관"
+
+            # 💡 '사명서' 태그가 달린 데이터는 습관 탑 목록에서 제외
+            if st_name == "사명서":
+                continue
+
             title_list = props.get("Name", {}).get("title", [])
             h_title = title_list[0]["text"]["content"] if title_list else None
             cat_obj = props.get("영역", {}).get("select")
             cat_name = cat_obj["name"] if cat_obj else None
-            st_obj = props.get("습관 상태", {}).get("select")
-            st_name = st_obj["name"] if st_obj else "보유 습관"
 
             level_obj = props.get("수준", {}).get("select")
             level_name = level_obj["name"] if level_obj else "중"
@@ -142,7 +148,7 @@ def delete_habit(page_id: str):
 
 @app.get("/api/mission")
 def get_mission():
-    """노션 DB에서 사명서 항목을 조회합니다."""
+    """노션 DB에서 '사명서' 항목을 조회합니다."""
     try:
         headers = {
             "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -152,18 +158,18 @@ def get_mission():
         url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
         body = {
             "filter": {
-                "property": "영역",
-                "select": {"equals": "내면"}
+                "property": "습관 상태",
+                "select": {"equals": "사명서"}
             }
         }
         res = requests.post(url, headers=headers, json=body)
-        
+
         if res.status_code == 200:
             query_res = res.json()
             results = query_res.get("results", [])
-            for page in results:
-                title_props = page.get("properties", {}).get("Name", {}).get("title", [])
-                if title_props and "사명서" in title_props[0].get("plain_text", ""):
+            if results:
+                title_props = results[0].get("properties", {}).get("Name", {}).get("title", [])
+                if title_props:
                     return {"mission": title_props[0].get("plain_text", "")}
 
         return {"mission": ""}
@@ -174,7 +180,7 @@ def get_mission():
 
 @app.post("/api/mission")
 def save_mission(data: MissionRequest):
-    """노션 DB에 사명서를 저장하거나 신규 생성합니다."""
+    """노션 DB에 사명서를 저장하거나 업데이트합니다."""
     try:
         headers = {
             "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -184,23 +190,20 @@ def save_mission(data: MissionRequest):
         url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
         body = {
             "filter": {
-                "property": "영역",
-                "select": {"equals": "내면"}
+                "property": "습관 상태",
+                "select": {"equals": "사명서"}
             }
         }
         res = requests.post(url, headers=headers, json=body)
-        
+
         target_page_id = None
         if res.status_code == 200:
             results = res.json().get("results", [])
-            for page in results:
-                title_props = page.get("properties", {}).get("Name", {}).get("title", [])
-                if title_props and "사명서" in title_props[0].get("plain_text", ""):
-                    target_page_id = page["id"]
-                    break
+            if results:
+                target_page_id = results[0]["id"]
 
         if target_page_id:
-            # 기존 사명서 노션 페이지 업데이트
+            # 기존 사명서 페이지 업데이트
             notion.pages.update(
                 page_id=target_page_id,
                 properties={
@@ -214,7 +217,7 @@ def save_mission(data: MissionRequest):
                 properties={
                     "Name": {"title": [{"text": {"content": data.content}}]},
                     "영역": {"select": {"name": "내면"}},
-                    "습관 상태": {"select": {"name": "보유 습관"}},
+                    "습관 상태": {"select": {"name": "사명서"}},
                     "수준": {"select": {"name": "중"}},
                 },
             )
