@@ -4,6 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Miracle Morning Tower</title>
+    
+    <!-- 1. 앱 상단 바 테마 색상 설정 -->
+    <meta name="theme-color" content="#3182ce">
+
+    <!-- 2. 라프라스 앱 아이콘 지정 (파비콘 및 모바일 웹 앱) -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png">
+
+    <!-- 3. PWA 매니페스트 설정 (Chrome 바로가기 설치 시 이름 및 아이콘 지정) -->
+    <link rel="manifest" href="data:application/manifest+json,{
+      &quot;name&quot;: &quot;Miracle Morning Tower&quot;,
+      &quot;short_name&quot;: &quot;미라클타워&quot;,
+      &quot;start_url&quot;: &quot;.&quot;,
+      &quot;display&quot;: &quot;standalone&quot;,
+      &quot;background_color&quot;: &quot;#f7fafc&quot;,
+      &quot;theme_color&quot;: &quot;#3182ce&quot;,
+      &quot;icons&quot;: [{
+        &quot;src&quot;: &quot;https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png&quot;,
+        &quot;sizes&quot;: &quot;512x512&quot;,
+        &quot;type&quot;: &quot;image/png&quot;
+      }]
+    }">
+
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -197,7 +220,6 @@
             const [status, setStatus] = React.useState("보유 습관");
             const [level, setLevel] = React.useState("중");
 
-            // 습관 목록 불러오기
             const loadHabits = async () => {
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/habits`);
@@ -208,7 +230,6 @@
                 }
             };
 
-            // 노션 DB에서 사명서 불러오기
             const loadMission = async () => {
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/mission`);
@@ -310,7 +331,6 @@
                 }
             };
 
-            // 백엔드 API를 통해 사명서를 노션 DB에 저장
             const handleSaveMission = async () => {
                 setSaveMsg("저장 중...");
                 try {
