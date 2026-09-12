@@ -144,16 +144,27 @@ def delete_habit(page_id: str):
 def get_mission():
     """노션 DB에서 사명서 항목을 조회합니다."""
     try:
-        response = notion.databases.query(
-            database_id=DATABASE_ID,
-            filter={"property": "영역", "select": {"equals": "내면"}},
-        )
-        results = response.get("results", [])
-        for page in results:
-            title_props = page["properties"].get("Name", {}).get("title", [])
-            if title_props and "사명서" in title_props[0].get("plain_text", ""):
-                # 페이지 제목을 기반으로 사명서 조회
-                return {"mission": title_props[0].get("plain_text", "")}
+        headers = {
+            "Authorization": f"Bearer {NOTION_TOKEN}",
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
+        }
+        url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
+        body = {
+            "filter": {
+                "property": "영역",
+                "select": {"equals": "내면"}
+            }
+        }
+        res = requests.post(url, headers=headers, json=body)
+        
+        if res.status_code == 200:
+            query_res = res.json()
+            results = query_res.get("results", [])
+            for page in results:
+                title_props = page.get("properties", {}).get("Name", {}).get("title", [])
+                if title_props and "사명서" in title_props[0].get("plain_text", ""):
+                    return {"mission": title_props[0].get("plain_text", "")}
 
         return {"mission": ""}
     except Exception as e:
@@ -165,21 +176,31 @@ def get_mission():
 def save_mission(data: MissionRequest):
     """노션 DB에 사명서를 저장하거나 신규 생성합니다."""
     try:
-        response = notion.databases.query(
-            database_id=DATABASE_ID,
-            filter={"property": "영역", "select": {"equals": "내면"}},
-        )
-        results = response.get("results", [])
+        headers = {
+            "Authorization": f"Bearer {NOTION_TOKEN}",
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
+        }
+        url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
+        body = {
+            "filter": {
+                "property": "영역",
+                "select": {"equals": "내면"}
+            }
+        }
+        res = requests.post(url, headers=headers, json=body)
+        
         target_page_id = None
-
-        for page in results:
-            title_props = page["properties"].get("Name", {}).get("title", [])
-            if title_props and "사명서" in title_props[0].get("plain_text", ""):
-                target_page_id = page["id"]
-                break
+        if res.status_code == 200:
+            results = res.json().get("results", [])
+            for page in results:
+                title_props = page.get("properties", {}).get("Name", {}).get("title", [])
+                if title_props and "사명서" in title_props[0].get("plain_text", ""):
+                    target_page_id = page["id"]
+                    break
 
         if target_page_id:
-            # 기존 사명서 노션 페이지 제목 업데이트
+            # 기존 사명서 노션 페이지 업데이트
             notion.pages.update(
                 page_id=target_page_id,
                 properties={
