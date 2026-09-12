@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from notion_client import Client
 import requests
+import random
 
 app = FastAPI(title="Habit Tower Backend API")
 
@@ -224,3 +225,83 @@ def save_mission(data: MissionRequest):
         return {"status": "success", "message": "사명서가 노션에 저장되었습니다."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+QUOTE_DATABASE_ID = os.getenv("QUOTE_DATABASE_ID", "")
+
+
+@app.get("/api/quotes/random")
+def get_random_quotes():
+    """노션 독서 DB에서 저장된 명구절 중 무작위로 최대 5개를 뽑아 반환합니다."""
+    if not QUOTE_DATABASE_ID:
+        return {"quotes": [{"quote": "설정된 독서 DB가 없습니다.", "source": "시스템"}]}
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {NOTION_TOKEN}",
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
+        }
+        url = f"https://api.notion.com/v1/databases/{QUOTE_DATABASE_ID}/query"
+        res = requests.post(url, headers=headers)
+
+        if res.status_code == 200:
+            results = res.json().get("results", [])
+            quotes_list = []
+
+            for page in results:
+                props = page.get("properties", {})
+
+                # Name (명문장 본문)
+                title_props = props.get("Name", {}).get("title", [])
+                quote_text = (
+                    title_props[0].get("plain_text", "") if title_props else ""
+                )
+
+                # 출처 (책 제목 / 저자)
+                source_obj = props.get("출처", {})
+                source_text = ""
+                if (
+                    source_obj.get("type") == "rich_text"
+                    and source_obj.get("rich_text")
+                ):
+                    source_text = source_obj["rich_text"][0].get(
+                        "plain_text", ""
+                    )
+                elif source_obj.get("type") == "select" and source_obj.get(
+                    "select"
+                ):
+                    source_text = source_obj["select"].get("name", "")
+
+                if quote_text:
+                    quotes_list.append(
+                        {
+                            "quote": quote_text,
+                            "source": source_text or "출처 미상",
+                        }
+                    )
+
+            if quotes_list:
+                # DB에 등록된 구절 중 최대 5개를 무작위 추출
+                sample_count = min(5, len(quotes_list))
+                selected_quotes = random.sample(quotes_list, sample_count)
+                return {"quotes": selected_quotes}
+
+        return {
+            "quotes": [
+                {
+                    "quote": "아직 등록된 명구절이 없습니다. 노션 DB에 문장을 추가해 보세요!",
+                    "source": "Miracle Morning",
+                }
+            ]
+        }
+    except Exception as e:
+        print("명언 조회 에러:", e)
+        return {
+            "quotes": [
+                {
+                    "quote": "명언을 불러오는 중 오류가 발생했습니다.",
+                    "source": "에러",
+                }
+            ]
+        }
