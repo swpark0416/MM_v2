@@ -5,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Miracle Morning Tower</title>
     
-    <!-- 1. 앱 상단 바 테마 색상 설정 -->
     <meta name="theme-color" content="#3182ce">
-
-    <!-- 2. 라프라스 앱 아이콘 지정 (파비콘 및 모바일 웹 앱) -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png">
 
-    <!-- 3. PWA 매니페스트 설정 (Chrome 바로가기 설치 시 이름 및 아이콘 지정) -->
     <link rel="manifest" href="data:application/manifest+json,{
       &quot;name&quot;: &quot;Miracle Morning Tower&quot;,
       &quot;short_name&quot;: &quot;미라클타워&quot;,
@@ -42,19 +38,19 @@
             overflow-x: hidden; 
         }
 
-        /* 상단 네비게이션 (2개 탭) */
+        /* 상단 네비게이션 */
         .top-nav { display: flex; justify-content: space-around; gap: 8px; margin-bottom: 16px; background-color: #edf2f7; padding: 5px; border-radius: 12px; }
         .top-nav-item { flex: 1; padding: 10px 4px; font-size: 0.85rem; font-weight: 700; border: none; border-radius: 8px; background: transparent; color: #718096; cursor: pointer; transition: all 0.2s ease; text-align: center; touch-action: manipulation; }
         .top-nav-item.active { background-color: #3182ce; color: #ffffff; box-shadow: 0 2px 6px rgba(49, 130, 206, 0.3); }
 
-        /* 슬라이드 컨테이너 (2개 슬라이드) */
+        /* 슬라이드 컨테이너 */
         .slider-container { display: flex; width: 200%; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
         .slide-page { width: 50%; padding: 4px; flex-shrink: 0; }
 
         /* Miracle Morning 세로 스크롤 컨테이너 */
         .miracle-morning-container { display: flex; flex-direction: column; gap: 16px; }
 
-        /* SAVERS 일반 카드 공통 스타일 */
+        /* SAVERS 카드 공통 */
         .savers-card { background: #ffffff; border-radius: 16px; padding: 24px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; text-align: center; }
         .savers-title { font-size: 1.2rem; font-weight: 700; color: #2d3748; margin-bottom: 6px; }
         .savers-subtitle { font-size: 0.82rem; color: #718096; margin-bottom: 16px; word-break: keep-all; line-height: 1.4; }
@@ -73,6 +69,13 @@
         .mission-textarea:focus { border-color: #3182ce; background-color: #ffffff; }
         .mission-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
         .save-toast { font-size: 0.75rem; color: #38a169; font-weight: 600; }
+
+        /* Reading (독서 명문장) 전용 카드의 스타일 */
+        .quotes-list { width: 100%; display: flex; flex-direction: column; gap: 12px; margin: 12px 0; }
+        .quote-card-item { background: #f8fafc; border-left: 4px solid #3182ce; border-radius: 8px; padding: 12px 14px; text-align: left; }
+        .quote-card-text { font-size: 0.88rem; color: #2d3748; font-style: italic; line-height: 1.5; margin-bottom: 6px; }
+        .quote-card-source { font-size: 0.76rem; color: #718096; font-weight: 600; text-align: right; }
+        .quote-btn-group { display: flex; gap: 8px; width: 100%; margin-top: 8px; }
 
         /* 습관 탑 스타일 */
         h1 { text-align: center; font-size: 1.3rem; margin-bottom: 14px; font-weight: 700; color: #2d3748; }
@@ -213,6 +216,9 @@
             const [saveMsg, setSaveMsg] = React.useState("");
 
             const [habitsData, setHabitsData] = React.useState({ owned: {}, wish: {}, all: [] });
+            const [quotes, setQuotes] = React.useState([]);
+            const [isQuotesLoading, setIsQuotesLoading] = React.useState(false);
+
             const [editModalItem, setEditModalItem] = React.useState(null); 
 
             const [title, setTitle] = React.useState("");
@@ -242,9 +248,25 @@
                 }
             };
 
+            const loadRandomQuotes = async () => {
+                setIsQuotesLoading(true);
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/quotes/random`);
+                    const data = await res.json();
+                    if (data.quotes) {
+                        setQuotes(data.quotes);
+                    }
+                } catch (err) {
+                    console.error("명구절 로드 실패:", err);
+                } finally {
+                    setIsQuotesLoading(false);
+                }
+            };
+
             React.useEffect(() => {
                 loadHabits();
                 loadMission();
+                loadRandomQuotes();
                 const interval = setInterval(loadHabits, 30000);
                 return () => clearInterval(interval);
             }, []);
@@ -416,11 +438,31 @@
                                     <div className="savers-icon">⚡</div>
                                 </div>
 
-                                {/* 5. R - Reading */}
+                                {/* 5. R - Reading (랜덤 독서 명구절 연동) */}
                                 <div className="savers-card">
-                                    <div className="savers-title">📚 5. Reading (독서)</div>
-                                    <div className="savers-subtitle">지혜가 담긴 책을 읽으며 새로운 자극을 얻어보세요.</div>
-                                    <div className="savers-icon">📖</div>
+                                    <div className="savers-title">📚 5. Reading (오늘의 지혜 5선)</div>
+                                    <div className="savers-subtitle">노션 DB에 수집된 구절 중 영감을 주는 5개의 문장입니다.</div>
+                                    
+                                    <div className="quotes-list">
+                                        {isQuotesLoading ? (
+                                            <div style={{ fontSize: '0.8rem', color: '#a0aec0', padding: '16px 0' }}>명문장을 불러오는 중...</div>
+                                        ) : quotes.length > 0 ? (
+                                            quotes.map((item, idx) => (
+                                                <div key={idx} className="quote-card-item">
+                                                    <div className="quote-card-text">"{item.quote}"</div>
+                                                    <div className="quote-card-source">- {item.source}</div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div style={{ fontSize: '0.8rem', color: '#a0aec0', padding: '16px 0' }}>아직 등록된 구절이 없습니다.</div>
+                                        )}
+                                    </div>
+
+                                    <div className="quote-btn-group">
+                                        <button onClick={loadRandomQuotes} style={{ flex: 1, padding: '10px 0', borderRadius: '8px' }}>
+                                            🎲 새로고침 (다른 5개 보기)
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* 6. S - Scribing */}
