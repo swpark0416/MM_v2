@@ -252,27 +252,24 @@ def get_random_quotes():
             for page in results:
                 props = page.get("properties", {})
 
-                # Name (명문장 본문)
-                title_props = props.get("Name", {}).get("title", [])
-                quote_text = (
-                    title_props[0].get("plain_text", "") if title_props else ""
-                )
+                # 1. Name (명문장 본문) 파싱 - 첫번째 Title 속성 안전하게 추출
+                quote_text = ""
+                for prop_val in props.values():
+                    if prop_val.get("type") == "title" and prop_val.get("title"):
+                        quote_text = prop_val["title"][0].get("plain_text", "")
+                        break
 
-                # 출처 (책 제목 / 저자)
+                # 2. 출처 파싱 (선택, 텍스트 등 유연하게 다 감지)
                 source_obj = props.get("출처", {})
                 source_text = ""
-                if (
-                    source_obj.get("type") == "rich_text"
-                    and source_obj.get("rich_text")
-                ):
-                    source_text = source_obj["rich_text"][0].get(
-                        "plain_text", ""
-                    )
-                elif source_obj.get("type") == "select" and source_obj.get(
-                    "select"
-                ):
+                stype = source_obj.get("type")
+                
+                if stype == "select" and source_obj.get("select"):
                     source_text = source_obj["select"].get("name", "")
+                elif stype == "rich_text" and source_obj.get("rich_text"):
+                    source_text = source_obj["rich_text"][0].get("plain_text", "")
 
+                # 문장 본문이 확인되면 목록에 삽입
                 if quote_text:
                     quotes_list.append(
                         {
@@ -282,7 +279,6 @@ def get_random_quotes():
                     )
 
             if quotes_list:
-                # DB에 등록된 구절 중 최대 5개를 무작위 추출
                 sample_count = min(5, len(quotes_list))
                 selected_quotes = random.sample(quotes_list, sample_count)
                 return {"quotes": selected_quotes}
