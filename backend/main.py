@@ -232,6 +232,7 @@ QUOTE_DATABASE_ID = os.getenv("QUOTE_DATABASE_ID", "")
 
 @app.get("/api/quotes/random")
 def get_random_quotes():
+    """노션 독서 DB에서 저장된 명구절 중 무작위로 최대 5개를 뽑아 반환합니다."""
     if not QUOTE_DATABASE_ID:
         return {"quotes": [{"quote": "설정된 독서 DB가 없습니다.", "source": "시스템"}]}
 
@@ -246,11 +247,57 @@ def get_random_quotes():
 
         if res.status_code == 200:
             results = res.json().get("results", [])
-            print(f"DEBUG - 노션 검색 결과 개수: {len(results)}") # Render 로그에 출력됨
-            
             quotes_list = []
+
             for page in results:
                 props = page.get("properties", {})
-                print("DEBUG - props keys:", list(props.keys())) # 속성 이름 목록 출력
 
-                # ... (이하 동일)
+                # 1. Name (명문장 본문) 파싱 - 첫번째 Title 속성 안전하게 추출
+                quote_text = ""
+                for prop_val in props.values():
+                    if prop_val.get("type") == "title" and prop_val.get("title"):
+                        quote_text = prop_val["title"][0].get("plain_text", "")
+                        break
+
+                # 2. 출처 파싱 (선택, 텍스트 등 유연하게 다 감지)
+                source_obj = props.get("출처", {})
+                source_text = ""
+                stype = source_obj.get("type")
+                
+                if stype == "select" and source_obj.get("select"):
+                    source_text = source_obj["select"].get("name", "")
+                elif stype == "rich_text" and source_obj.get("rich_text"):
+                    source_text = source_obj["rich_text"][0].get("plain_text", "")
+
+                # 문장 본문이 확인되면 목록에 삽입
+                if quote_text:
+                    quotes_list.append(
+                        {
+                            "quote": quote_text,
+                            "source": source_text or "출처 미상",
+                        }
+                    )
+
+            if quotes_list:
+                sample_count = min(5, len(quotes_list))
+                selected_quotes = random.sample(quotes_list, sample_count)
+                return {"quotes": selected_quotes}
+
+        return {
+            "quotes": [
+                {
+                    "quote": "아직 등록된 명구절이 없습니다. 노션 DB에 문장을 추가해 보세요!",
+                    "source": "Miracle Morning",
+                }
+            ]
+        }
+    except Exception as e:
+        print("명언 조회 에러:", e)
+        return {
+            "quotes": [
+                {
+                    "quote": "명언을 불러오는 중 오류가 발생했습니다.",
+                    "source": "에러",
+                }
+            ]
+        }
