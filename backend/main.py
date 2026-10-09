@@ -1,11 +1,11 @@
 import os
+import random
 from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from notion_client import Client
 import requests
-import random
 
 app = FastAPI(title="Habit Tower Backend API")
 
@@ -19,11 +19,15 @@ app.add_middleware(
 
 NOTION_TOKEN = os.getenv("NOTION_TOKEN", "YOUR_NOTION_TOKEN_HERE")
 DATABASE_ID = os.getenv("DATABASE_ID", "YOUR_DATABASE_ID_HERE")
+QUOTE_DATABASE_ID = os.getenv("QUOTE_DATABASE_ID", "")
+# 새로 만든 텍스트 전용 노션 DB ID (명상, 사명서, 감사 관리용)
+TEXT_DATABASE_ID = os.getenv("TEXT_DATABASE_ID", "")
 
 notion = Client(auth=NOTION_TOKEN)
 CATEGORIES = ["공부", "취미", "외면", "내면"]
 
 
+# --- Pydantic 모델 정의 ---
 class HabitCreate(BaseModel):
     title: str
     category: str
@@ -36,10 +40,12 @@ class HabitUpdate(BaseModel):
     status: Optional[str] = None
 
 
-class MissionRequest(BaseModel):
+class TextRecord(BaseModel):
+    category: str  # "명상", "사명서", "감사"
     content: str
 
 
+# --- 1. 습관 탑 API ---
 @app.get("/api/habits")
 def get_habits():
     """노션에서 습관 목록을 가져와 영역별로 분류합니다."""
@@ -66,11 +72,9 @@ def get_habits():
             page_id = page["id"]
             props = page["properties"]
 
-            # 습관 상태 검사
             st_obj = props.get("습관 상태", {}).get("select")
             st_name = st_obj["name"] if st_obj else "보유 습관"
 
-            # 💡 '사명서' 태그가 달린 데이터는 습관 탑 목록에서 제외
             if st_name == "사명서":
                 continue
 
@@ -147,56 +151,68 @@ def delete_habit(page_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/mission")
-def get_mission():
-    """노션 DB에서 '사명서' 항목을 조회합니다."""
+# --- 2. 신규 텍스트 전용 DB (명상, 사명서, 감사) API ---
+@app.get("/api/texts")
+def get_texts():
+    """신규 노션 DB에서 명상, 사명서, 감사 텍스트를 최신순으로 조회합니다."""
+    if not TEXT_DATABASE_ID:
+        return {"명상": "", "사명서": "", "감사": ""}
+
     try:
         headers = {
             "Authorization": f"Bearer {NOTION_TOKEN}",
             "Notion-Version": "2022-06-28",
             "Content-Type": "application/json",
         }
-        url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
-        body = {
-            "filter": {
-                "property": "습관 상태",
-                "select": {"equals": "사명서"}
-            }
-        }
-        res = requests.post(url, headers=headers, json=body)
+        url = f"https://api.notion.com/v1/databases/{TEXT_DATABASE_ID}/query"
+        res = requests.post(url, headers=headers)
 
-        if res.status_code == 200:
-            query_res = res.json()
-            results = query_res.get("results", [])
-            if results:
-                title_props = results[0].get("properties", {}).get("Name", {}).get("title", [])
-                if title_props:
-                    return {"mission": title_props[0].get("plain_text", "")}
+        if res.status_code != 200:
+            return {"명상": "", "사명서": "", "감사": ""}
 
-        return {"mission": ""}
+        records = {"명상": "", "사명서": "", "감사": ""}
+        results = res.json().get("results", [])
+
+        for page in results:
+            props = page.get("properties", {})
+            cat_obj = props.get("카테고리", {}).get("select")
+            cat_name = cat_obj["name"] if cat_obj else None
+
+            content_list = props.get("내용", {}).get("rich_text", [])
+            content = content_list[0]["text"]["content"] if content_list else ""
+
+            if cat_name in records and not records[cat_name]:
+                records[cat_name] = content
+
+        return records
     except Exception as e:
-        print("사명서 조회 에러:", e)
-        return {"mission": ""}
+        print("텍스트 데이터 조회 에러:", e)
+        return {"명상": "", "사명서": "", "감사": ""}
 
 
-@app.post("/api/mission")
-def save_mission(data: MissionRequest):
-    """노션 DB에 사명서를 저장하거나 업데이트합니다."""
+@app.post("/api/texts")
+def save_text(record: TextRecord):
+    """명상, 사명서, 감사 텍스트 데이터를 신규 노션 DB에 저장/업데이트합니다."""
+    if not TEXT_DATABASE_ID:
+        raise HTTPException(status_code=400, detail="TEXT_DATABASE_ID 환경변수가 설정되지 않았습니다.")
+
     try:
         headers = {
             "Authorization": f"Bearer {NOTION_TOKEN}",
             "Notion-Version": "2022-06-28",
             "Content-Type": "application/json",
         }
-        url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
+        
+        # 해당 카테고리의 기존 페이지가 있는지 조회
+        query_url = f"https://api.notion.com/v1/databases/{TEXT_DATABASE_ID}/query"
         body = {
             "filter": {
-                "property": "습관 상태",
-                "select": {"equals": "사명서"}
+                "property": "카테고리",
+                "select": {"equals": record.category}
             }
         }
-        res = requests.post(url, headers=headers, json=body)
-
+        res = requests.post(query_url, headers=headers, json=body)
+        
         target_page_id = None
         if res.status_code == 200:
             results = res.json().get("results", [])
@@ -204,32 +220,33 @@ def save_mission(data: MissionRequest):
                 target_page_id = results[0]["id"]
 
         if target_page_id:
-            # 기존 사명서 페이지 업데이트
+            # 기존 페이지가 있으면 내용 업데이트
             notion.pages.update(
                 page_id=target_page_id,
                 properties={
-                    "Name": {"title": [{"text": {"content": data.content}}]}
-                },
+                    "내용": {
+                        "rich_text": [{"text": {"content": record.content}}]
+                    }
+                }
             )
         else:
-            # 신규 사명서 페이지 생성
+            # 신규 페이지 작성
             notion.pages.create(
-                parent={"database_id": DATABASE_ID},
+                parent={"database_id": TEXT_DATABASE_ID},
                 properties={
-                    "Name": {"title": [{"text": {"content": data.content}}]},
-                    "영역": {"select": {"name": "내면"}},
-                    "습관 상태": {"select": {"name": "사명서"}},
-                    "수준": {"select": {"name": "중"}},
+                    "Name": {"title": [{"text": {"content": f"{record.category} 기록"}}]},
+                    "카테고리": {"select": {"name": record.category}},
+                    "내용": {
+                        "rich_text": [{"text": {"content": record.content}}]
+                    },
                 },
             )
-        return {"status": "success", "message": "사명서가 노션에 저장되었습니다."}
+        return {"status": "success", "message": f"{record.category} 저장 완료"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-QUOTE_DATABASE_ID = os.getenv("QUOTE_DATABASE_ID", "")
-
-
+# --- 3. 독서 명구절 무작위 조회 API ---
 @app.get("/api/quotes/random")
 def get_random_quotes():
     """노션 독서 DB에서 저장된 명구절 중 무작위로 최대 5개를 뽑아 반환합니다."""
@@ -252,24 +269,21 @@ def get_random_quotes():
             for page in results:
                 props = page.get("properties", {})
 
-                # 1. Name (명문장 본문) 파싱 - 첫번째 Title 속성 안전하게 추출
                 quote_text = ""
                 for prop_val in props.values():
                     if prop_val.get("type") == "title" and prop_val.get("title"):
                         quote_text = prop_val["title"][0].get("plain_text", "")
                         break
 
-                # 2. 출처 파싱 (선택, 텍스트 등 유연하게 다 감지)
                 source_obj = props.get("출처", {})
                 source_text = ""
                 stype = source_obj.get("type")
-                
+
                 if stype == "select" and source_obj.get("select"):
                     source_text = source_obj["select"].get("name", "")
                 elif stype == "rich_text" and source_obj.get("rich_text"):
                     source_text = source_obj["rich_text"][0].get("plain_text", "")
 
-                # 문장 본문이 확인되면 목록에 삽입
                 if quote_text:
                     quotes_list.append(
                         {
