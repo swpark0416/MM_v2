@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png">
 
-    <!-- 안정된 CDNjs로 변경 -->
+    <!-- cdnjs 라이브러리 연동 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -39,17 +39,37 @@
         .savers-header { font-size: 1.1rem; font-weight: 700; color: #2d3748; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
         .savers-subtitle { font-size: 0.78rem; color: #718096; margin-bottom: 10px; word-break: keep-all; line-height: 1.4; }
 
+        /* 입력창 높이 및 폰트 크기 확장 */
         .mm-textarea { 
-            width: 100%; min-height: 100px; padding: 12px; 
-            border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem; 
-            line-height: 1.5; color: #2d3748; resize: none; outline: none; 
-            background-color: #f8fafc; font-family: inherit; margin-top: 4px;
+            width: 100%; 
+            min-height: 220px; 
+            padding: 14px; 
+            border: 1px solid #cbd5e0; 
+            border-radius: 12px; 
+            font-size: 0.95rem; 
+            line-height: 1.6; 
+            color: #2d3748; 
+            resize: vertical; 
+            outline: none; 
+            background-color: #f8fafc; 
+            font-family: inherit; 
+            margin-top: 8px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
         }
-        .mm-textarea:focus { border-color: #3182ce; background-color: #ffffff; }
+        .mm-textarea:focus { 
+            border-color: #3182ce; 
+            background-color: #ffffff; 
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+        }
 
-        .btn-save { background-color: #3182ce; color: white; border: none; font-weight: 600; padding: 8px 16px; font-size: 0.78rem; border-radius: 8px; cursor: pointer; float: right; margin-top: 8px; align-self: flex-end; }
+        /* 2번 사명서 전용 확장 높이 */
+        .affirmation-textarea {
+            min-height: 320px;
+        }
+
+        .btn-save { background-color: #3182ce; color: white; border: none; font-weight: 600; padding: 10px 18px; font-size: 0.85rem; border-radius: 8px; cursor: pointer; float: right; margin-top: 10px; align-self: flex-end; }
         
-        .debug-toast { font-size: 0.78rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; margin-top: 8px; word-break: break-all; }
+        .debug-toast { font-size: 0.78rem; font-weight: 700; padding: 8px 12px; border-radius: 8px; margin-top: 10px; word-break: break-all; }
         .debug-toast.success { background-color: #c6f6d5; color: #22543d; }
         .debug-toast.error { background-color: #fed7d7; color: #9b2c2c; }
         .debug-toast.info { background-color: #e2e8f0; color: #2d3748; }
@@ -414,8 +434,7 @@
                                     </div>
                                     <div className="savers-subtitle">나의 개인 사명서 및 확신의 말</div>
                                     <textarea 
-                                        className="mm-textarea" 
-                                        style={{ minHeight: '180px' }}
+                                        className="mm-textarea affirmation-textarea" 
                                         placeholder="[성공하는 사람들의 7가지 습관 : 나의 개인 사명서]&#10;1. 나는 어떤 사람이 되고 싶은가?&#10;2. 내가 지키고자 하는 핵심 가치는 무엇인가?"
                                         value={texts["사명서"]} 
                                         onChange={(e) => setTexts({ ...texts, 사명서: e.target.value })} 
