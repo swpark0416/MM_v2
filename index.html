@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -22,6 +23,19 @@
             max-width: 600px; 
             margin: 0 auto; 
             overflow-x: hidden; 
+        }
+
+        /* 치명적 자바스크립트 오류 표시용 디버그 카드 */
+        #global-error-card {
+            display: none;
+            background-color: #fff5f5;
+            border: 2px solid #feb2b2;
+            color: #c53030;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            word-break: break-all;
         }
 
         .top-nav { display: flex; justify-content: space-around; gap: 8px; margin-bottom: 16px; background-color: #edf2f7; padding: 5px; border-radius: 12px; }
@@ -47,7 +61,6 @@
 
         .btn-save { background-color: #3182ce; color: white; border: none; font-weight: 600; padding: 8px 16px; font-size: 0.78rem; border-radius: 8px; cursor: pointer; float: right; margin-top: 8px; align-self: flex-end; }
         
-        /* 디버그 상태 알림 디스플레이 */
         .debug-toast { font-size: 0.78rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; margin-top: 8px; word-break: break-all; }
         .debug-toast.success { background-color: #c6f6d5; color: #22543d; }
         .debug-toast.error { background-color: #fed7d7; color: #9b2c2c; }
@@ -105,7 +118,25 @@
     </style>
 </head>
 <body>
+    <!-- 전역 치명적 오류 트래킹 박스 -->
+    <div id="global-error-card">
+        <strong>⚠️ 렌더링 에러 발생:</strong>
+        <div id="global-error-msg"></div>
+    </div>
+
     <div id="root"></div>
+
+    <script>
+        // 자바스크립트 오류 팝업 감지
+        window.onerror = function(msg, url, line) {
+            var errCard = document.getElementById("global-error-card");
+            var errText = document.getElementById("global-error-msg");
+            if (errCard && errText) {
+                errCard.style.display = "block";
+                errText.innerText = msg + " (Line: " + line + ")";
+            }
+        };
+    </script>
 
     <script type="text/babel">
         const API_BASE_URL = "https://mm-back.onrender.com";
@@ -191,7 +222,6 @@
                 감사: ""
             });
 
-            // 각 카테고리별 디버깅용 로그 메시지 상태
             const [debugLogs, setDebugLogs] = React.useState({
                 명상: { msg: "", type: "info" },
                 사명서: { msg: "", type: "info" },
@@ -223,22 +253,24 @@
                     const res = await fetch(`${API_BASE_URL}/api/texts`);
                     if (res.ok) {
                         const data = await res.json();
-                        setTexts(prev => ({ ...prev, ...data }));
-                    } else {
-                        console.error("GET /api/texts 에러:", res.status);
+                        if (data && typeof data === 'object') {
+                            setTexts(prev => ({ ...prev, ...data }));
+                        }
                     }
                 } catch (err) {
-                    console.error("텍스트 불러오기 실패:", err);
+                    console.warn("텍스트 불러오기 예외:", err);
                 }
             };
 
             const loadHabits = async () => {
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/habits`);
-                    const data = await res.json();
-                    setHabitsData(data);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setHabitsData(data);
+                    }
                 } catch (err) {
-                    console.error("습관 데이터 로드 실패:", err);
+                    console.warn("습관 데이터 로드 예외:", err);
                 }
             };
 
@@ -246,10 +278,12 @@
                 setIsQuotesLoading(true);
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/quotes/random`);
-                    const data = await res.json();
-                    if (data.quotes) setQuotes(data.quotes);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.quotes) setQuotes(data.quotes);
+                    }
                 } catch (err) {
-                    console.error("명구절 로드 실패:", err);
+                    console.warn("명구절 로드 예외:", err);
                 } finally {
                     setIsQuotesLoading(false);
                 }
@@ -259,14 +293,11 @@
                 loadHabits();
                 loadTexts();
                 loadRandomQuotes();
-                const interval = setInterval(loadHabits, 30000);
-                return () => clearInterval(interval);
             }, []);
 
-            // 상세 에러 디버깅 기능이 들어간 저장 함수
             const handleSaveText = async (categoryName) => {
-                const content = texts[categoryName];
-                setLog(categoryName, "⏳ 백엔드로 요청 보내는 중...", "info");
+                const content = texts[categoryName] || "";
+                setLog(categoryName, "⏳ 저장 요청 중...", "info");
 
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/texts`, {
@@ -275,18 +306,17 @@
                         body: JSON.stringify({ category: categoryName, content })
                     });
 
-                    const resData = await res.json().catch(() => null);
+                    let resData = null;
+                    try { resData = await res.json(); } catch(e) {}
 
                     if (res.ok) {
                         setLog(categoryName, `✓ 성공: ${resData?.message || '저장되었습니다'}`, "success");
                     } else {
-                        // 404, 500 등 HTTP 에러 발생 시 원인 출력
-                        const errorMsg = resData?.detail || `HTTP 오류 (${res.status})`;
+                        const errorMsg = resData?.detail || `HTTP 에러코드 ${res.status}`;
                         setLog(categoryName, `❌ 실패: ${errorMsg}`, "error");
                     }
                 } catch (err) {
-                    // 네트워크 끊김 또는 CORS 에러 시
-                    setLog(categoryName, `❌ 네트워크 에러: ${err.message}`, "error");
+                    setLog(categoryName, `❌ 연결 에러: ${err.message}`, "error");
                 }
             };
 
